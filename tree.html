@@ -33,39 +33,113 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
+class File{
+  constructor(name, type){
+    this.name = name
+    this.type = type    
+    this.magicNum = ""
+    for(var i = 0; i < type.length; i++)
+      this.magicNum += this.type.charCodeAt(i) + " "
+    this.size = this.name.length + this.magicNum.length 
+    this.location = ""
+    this.contents = ""
+    this.dateCreated = new Date()
+    this.dateModified = this.dateCreated
+  }
+
+  read(){
+    console.log(this.contents)
+  }
+
+  write(content){
+    this.contents = content
+    this.size = this.name.length + this.magicNum.length + this.contents.length
+    this.dateModified = this.dateCreated
+  }
+
+  properties(){
+    console.log("File Name: " + this.name + "\n" +
+                "File Type: " + this.type + "\n" +
+                "File Size: " + this.size + "\n" +
+                "Date Created: " + this.dateCreated + "\n" +
+                "Date Modified: " + this.dateModified + "\n")
+  }
+}
+
+class Directory{
+  constructor(name){
+    this.name = name
+    this.type = "dir"
+    this.magicNum = ""
+    for (var i = 0; i < this.type.length; i++)
+      this.magicNum += this.type.charCodeAt(i) + " "
+    this.size = this.name.length + this.magicNum.length
+    if (this.name === "root")
+      this.location = "root\\"
+    else
+      this.location = ""
+    this.children = []
+    this.dateCreated = new Date()
+    this.dateModified = this.dateCreated
+  }
+
+  addChild(child){
+    if (child.type === "dir")
+      child.location = this.location + child.name + "\\"
+    else
+      child.location = this.location
+    this.children.push(child)
+    this.updateSize()
+
+  }
+
+  removeChild(child){
+    this.children.splice(this.children.indexOf(child), 1)
+    this.updateSize()
+  }
+
+  updateSize(){
+    this.size = this.name.length + this.magicNum.length
+    for(let child in this.children)
+      this.size += child.size
+  }
+
+  properties(){
+    console.log("File Name: " + this.name + "\n" +
+                "File Type: " + this.type + "\n" +
+                "File Size: " + this.size + "\n" +
+                "Date Created: " + this.dateCreated + "\n" +
+                "Date Modified: " + this.dateModified + "\n")
+  }
+
+}
+
+rootDirectory = new Directory("root")
+var treeInternal = {rootDirectory}
+var workingDir = rootDirectory
+
+newDirectory1 = new Directory("Folder1")
+workingDir.addChild(newDirectory1)
+console.log(newDirectory1.location)
+
+newDirectory2 = new Directory("Folder2")
+workingDir.addChild(newDirectory2)
+console.log(newDirectory2.location)
+
 var treeData =
   {
     "name": "RootFolder",
     "children": [
-      { 
-        "name": "Folder1",
+    {"name": "Folder1",
         "type": "folder",
-        "children": [
-          { 
-              "name": "File1",
-              "size": "8KB",
-              "magicNum": "123",
-              "type": "txt" 
-          },
-          {
-              "name": "File2"
-          }
-        ]
-      },
-      { 
-          "name": "Folder4",
-          "type": "folder",
-          "children": [] 
-      },
-      { 
-          "name": "Folder5",
-          "type": "folder",
-          "children": [] 
-      },
-      { 
-          "name": "File3",
-          "type": "file",
-      }
+        "children": [],
+        "location": "RootFolder"
+    },
+    {"name": "Folder2",
+        "type": "folder",
+        "children": [],
+        "location": "RootFolder"
+    }
     ]
   };
 
@@ -95,27 +169,63 @@ var treemap = d3.tree().size([height, width]);
 root = d3.hierarchy(treeData, function(d) { return d.children; });
 root.x0 = height / 2;
 root.y0 = 0;
+console.log(root)
 
 // Collapse after the second level
 root.children.forEach(collapse);
 
 update(root);
 
-/* Jeremy added this starting here*/
+/*
+*         Our code starts here
+*         Our code starts here
+*         Our code starts here
+*         Our code starts here
+*/
+
+function deleteFile(file){
+   
+
+}
+
+//takes in an absolute file path provided by a user and returns the node within treeData so that the node can be added to the tree
+function findNode(filePath){
+  let path = filePath.split("\\")
+  console.log(path)
+  var current = treeData
+  let j = 1
+
+  while(j < path.length){
+    for(let i = 0; i < current.children.length; i++){
+        if (current.children[i].name === path[j]){
+        current = current.children[i]
+        console.log(current)
+        j++
+        }          
+    }
+  }  
+    
+  //console.log(current)
+  return current
+      
+}
+
 //Adding something to the tree
 function addOne() {
+  
     let addOneParent = document.getElementById("addOneParent").value;
     let addOneInput = document.getElementById("addOneInput").value; 
 
-    for (let i = 0; i < treeData.children.length; i++) {
-        if(treeData.children[i].name == addOneParent && treeData.children[i].type == "folder") {
-            treeData.children[i].children.push({
+    parentNode = findNode(addOneParent)
+    parentNode.children.push({
                 "name": addOneInput,
-                "children": []
-            });
-        }
-    }
-    
+                "type": "folder",
+                "children": [],
+                "location": parentNode.location + "\\" + parentNode.name
+    })
+    newDirectory = new Directory(addOneInput)
+    //workingDir.addChild(newDirectory)
+    //console.log(newDirectory.location)
     generate();
 }
 
@@ -148,7 +258,12 @@ function generate() {
     update(root);
 }
 
-/* Jeremy's addition ended here */
+/*
+*         Don't make changes below this point!
+*         Don't make changes below this point!
+*         Don't make changes below this point!
+*         Don't make changes below this point!
+*/
 
 // Collapse the node and all it's children
 function collapse(d) {
