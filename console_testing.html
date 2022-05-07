@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <textarea id="consoleScreen" cols="75" rows="20" disabled></textarea><br>
+        <input id="consoleInput" type="text" size="75" onkeypress="consoleEnter(event)"><br>
+        <p>
+            <b>Key:</b><br>
+            mkdir [directory name]: Make new directory with name<br>
+            pwd: Print working directory <br>
+            cd [directory]: Change working directory<br>
+            rmdir [directory name]: Remove directory name from working directory<br>
+            mkfile [file name]: Make a new file with name<br>
+            rmfile [file name]: Remove a file with name from working directory<br>
+        </p>
+
+        <script type="text/javascript">
+
+            var curConsoleLines = 0;
+            function consoleEnter(x) {
+                if(x.keyCode == 13 || x.code == "Enter") {
+                    curConsoleLines++;
+                    consoleScreen = document.getElementById("consoleScreen");
+                    consoleInput = document.getElementById("consoleInput");
+                    consoleScreen.innerHTML += curConsoleLines + "  " + consoleInput.value + "\n";
+                    
+                    let inputSplit = consoleInput.value.split(" ");
+                    
+                    switch(inputSplit[0]) {
+                        case "mkdir":
+                            consoleScreen.innerHTML += "Trying to make a directory named " + inputSplit[1] + "\n";
+                            break;
+                        case "pwd":
+                            consoleScreen.innerHTML += "Current working directory: " + "someArbitraryValue";
+                            break;
+                        default:
+                            consoleScreen.innerHTML += "Unrecognizable command: " + inputSplit[0] + "\n";
+                            break;
+                    }
+
+                    //Final thing to do is to set the input textfield back to nothing
+                    consoleInput.value = "";
+                }   
+            }
+        </script>
+    </body>
+</html>
