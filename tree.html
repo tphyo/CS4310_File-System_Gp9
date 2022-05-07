@@ -115,7 +115,7 @@ class File{
   write(content){
     this.contents = content
     this.size = this.name.length + this.magicNum.length + this.contents.length
-    this.dateModified = this.dateCreated
+    this.dateModified = new Date()
   }
 
   properties(){
@@ -145,10 +145,7 @@ class Directory{
   }
 
   addChild(child){
-    if (child.type === "dir")
-      child.location = this.location + child.name + "\\"
-    else
-      child.location = this.location
+    child.location = this.location
     this.children.push(child)
     this.updateSize()
 
@@ -160,9 +157,13 @@ class Directory{
   }
 
   updateSize(){
-    this.size = this.name.length + this.magicNum.length
-    for(let child in this.children)
-      this.size += child.size
+    this.size = this.name.length + this.magicNum.length    
+    for(let i = 0; i < this.children.length; i++){
+      if(this.children[i].type === "dir"){
+        this.children[i].updateSize()
+      }        
+      this.size += this.children[i].size
+    }      
   }
 
   properties(){
@@ -175,18 +176,19 @@ class Directory{
 
 }
 
-rootDirectory = new Directory("root")
-var treeInternal = {rootDirectory}
-var workingDir = rootDirectory
+rootDirectory = new Directory("RootFolder")
 
-newDirectory1 = new Directory("Folder1")
-workingDir.addChild(newDirectory1)
+folder1 = new Directory("Folder1")
+rootDirectory.addChild(folder1)
 //console.log(newDirectory1.location)
 
-newDirectory2 = new Directory("Folder2")
-workingDir.addChild(newDirectory2)
+folder2 = new Directory("Folder2")
+rootDirectory.addChild(folder2)
 //console.log(newDirectory2.location)
 
+treeData.file = rootDirectory;
+treeData.children[0].file = folder1;
+treeData.children[1].file = folder2;
 
 //takes in an absolute file path provided by a user and returns the node within treeData so that the node can be added to the tree
 function findNode(filePath){
@@ -216,14 +218,16 @@ function addOne() {
     let addOneParent = document.getElementById("addOneParent").value;
     let addOneInput = document.getElementById("addOneInput").value; 
 
+    newDirectory = new Directory(addOneInput)
     parentNode = findNode(addOneParent)
     parentNode.children.push({
                 "name": addOneInput,
                 "type": "folder",
+                "file": newDirectory,
                 "children": [],
                 "location": parentNode.location + "\\" + parentNode.name + "\\" + addOneInput
     })
-    newDirectory = new Directory(addOneInput)
+    parentNode.file.addChild(newDirectory)
     //workingDir.addChild(newDirectory)
     //console.log(newDirectory.location)
     generate();
@@ -245,6 +249,7 @@ function deleteOne(filePath = "") {
 
     doomedNode = findNode(filePath)
     index = parentNode.children.indexOf(doomedNode)
+    parentNode.file.removeChild(doomedNode.file)
     delete parentNode.children[index]
     parentNode.children.splice(index,1)    
     generate()
@@ -255,6 +260,8 @@ function generate() {
     root = d3.hierarchy(treeData, function(d) { return d.children; });
     root.x0 = height / 2;
     root.y0 = 0;
+    rootDirectory.updateSize();
+    console.log(rootDirectory.properties())
 
     // Collapse after the second level
     root.children.forEach(collapse);
@@ -410,6 +417,7 @@ function update(source) {
   function click(d) {
     //console.log(d.data.name)
     //console.log(d.data.type)
+    console.log(d.data.file.properties())
     if (d.children) {
         d._children = d.children;
         d.children = null;
