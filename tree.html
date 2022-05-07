@@ -28,10 +28,71 @@
     <br>
     <button onClick="generate()">Generate</button>
     <br>
+    <input id="deleteOneParent" placeholder="Parent Folder"></input><br>
+    <input id="deleteOneInput" placeholder="File Name"></input>
+    <button onClick="deleteOne()">Delete File</button>
+    
 
 <!-- load the d3.js library -->	
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
+
+var treeData =
+  {
+    "name": "RootFolder",
+    "children": [
+    {"name": "Folder1",
+        "type": "folder",
+        "children": [],
+        "location": "RootFolder"
+    },
+    {"name": "Folder2",
+        "type": "folder",
+        "children": [],
+        "location": "RootFolder"
+    }
+    ]
+  };
+
+// Set the dimensions and margins of the diagram
+var margin = {top: 20, right: 90, bottom: 30, left: 90},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+// appends a 'group' element to 'svg'
+// moves the 'group' element to the top left margin
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.right + margin.left)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate("
+          + margin.left + "," + margin.top + ")");
+
+var i = 0,
+    duration = 750,
+    root;
+
+// declares a tree layout and assigns the size
+var treemap = d3.tree().size([height, width]);
+
+// Assigns parent, children, height, depth
+root = d3.hierarchy(treeData, function(d) { return d.children; });
+root.x0 = height / 2;
+root.y0 = 0;
+//console.log(root)
+
+// Collapse after the second level
+root.children.forEach(collapse);
+
+update(root);
+
+/**************************************************
+*              Our code starts here
+*              Our code starts here
+*              Our code starts here
+*              Our code starts here
+***************************************************/
 
 class File{
   constructor(name, type){
@@ -120,78 +181,17 @@ var workingDir = rootDirectory
 
 newDirectory1 = new Directory("Folder1")
 workingDir.addChild(newDirectory1)
-console.log(newDirectory1.location)
+//console.log(newDirectory1.location)
 
 newDirectory2 = new Directory("Folder2")
 workingDir.addChild(newDirectory2)
-console.log(newDirectory2.location)
+//console.log(newDirectory2.location)
 
-var treeData =
-  {
-    "name": "RootFolder",
-    "children": [
-    {"name": "Folder1",
-        "type": "folder",
-        "children": [],
-        "location": "RootFolder"
-    },
-    {"name": "Folder2",
-        "type": "folder",
-        "children": [],
-        "location": "RootFolder"
-    }
-    ]
-  };
-
-// Set the dimensions and margins of the diagram
-var margin = {top: 20, right: 90, bottom: 30, left: 90},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
-
-// append the svg object to the body of the page
-// appends a 'group' element to 'svg'
-// moves the 'group' element to the top left margin
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.right + margin.left)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate("
-          + margin.left + "," + margin.top + ")");
-
-var i = 0,
-    duration = 750,
-    root;
-
-// declares a tree layout and assigns the size
-var treemap = d3.tree().size([height, width]);
-
-// Assigns parent, children, height, depth
-root = d3.hierarchy(treeData, function(d) { return d.children; });
-root.x0 = height / 2;
-root.y0 = 0;
-console.log(root)
-
-// Collapse after the second level
-root.children.forEach(collapse);
-
-update(root);
-
-/*
-*         Our code starts here
-*         Our code starts here
-*         Our code starts here
-*         Our code starts here
-*/
-
-function deleteFile(file){
-   
-
-}
 
 //takes in an absolute file path provided by a user and returns the node within treeData so that the node can be added to the tree
 function findNode(filePath){
   let path = filePath.split("\\")
-  console.log(path)
+  //console.log(path)
   var current = treeData
   let j = 1
 
@@ -199,7 +199,7 @@ function findNode(filePath){
     for(let i = 0; i < current.children.length; i++){
         if (current.children[i].name === path[j]){
         current = current.children[i]
-        console.log(current)
+        //console.log(current)
         j++
         }          
     }
@@ -221,7 +221,7 @@ function addOne() {
                 "name": addOneInput,
                 "type": "folder",
                 "children": [],
-                "location": parentNode.location + "\\" + parentNode.name
+                "location": parentNode.location + "\\" + parentNode.name + "\\" + addOneInput
     })
     newDirectory = new Directory(addOneInput)
     //workingDir.addChild(newDirectory)
@@ -230,20 +230,24 @@ function addOne() {
 }
 
 //Delete something from tree
-function deleteOne() {
+function deleteOne(filePath = "") {
     let deleteOneParent = document.getElementById("deleteOneParent").value;
     let deleteOneInput = document.getElementById("deleteOneInput").value; 
-
-    for (let i = 0; i < treeData.children.length; i++) {
-        if(treeData.children[i].name == addOneParent && treeData.children[i].type == "folder") {
-            treeData.children[i].children.push({
-                "name": addOneInput,
-                "children": []
-            });
-        }
-    }
     
-    generate();
+    if(filePath === ""){
+      filePath = deleteOneParent + "\\" + deleteOneInput
+      parentNode = findNode(deleteOneParent)    
+    }
+    else{
+       let parentPath = filePath.slice(0, filePath.lastIndexOf("\\"))
+       parentNode = findNode(parentPath)
+    }
+
+    doomedNode = findNode(filePath)
+    index = parentNode.children.indexOf(doomedNode)
+    delete parentNode.children[index]
+    parentNode.children.splice(index,1)    
+    generate()
 }
 
 //Generating this refreshes the tree
@@ -258,14 +262,14 @@ function generate() {
     update(root);
 }
 
-/*
+/******************************************************
 *         Don't make changes below this point!
 *         Don't make changes below this point!
 *         Don't make changes below this point!
 *         Don't make changes below this point!
-*/
+*******************************************************/
 
-// Collapse the node and all it's children
+// Collapse the node and all its children
 function collapse(d) {
   if(d.children) {
     d._children = d.children
@@ -404,6 +408,8 @@ function update(source) {
 
   // Toggle children on click.
   function click(d) {
+    //console.log(d.data.name)
+    //console.log(d.data.type)
     if (d.children) {
         d._children = d.children;
         d.children = null;
