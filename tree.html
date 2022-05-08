@@ -80,12 +80,29 @@
                     //Remove file
                     case "rmfile":
                         if(workingDirectory == rootDirectory){
-                          deleteOne(workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToRemove = findNode(workingDirectory.name + "\\" + inputSplit[1])
+                          var open = OFT.openFile(nodeToRemove.file)
+                          if(open){
+                            deleteOne(workingDirectory.name + "\\" + inputSplit[1])
+                            OFT.closeFile(open[1]) //by this point, the file is already deleted but its entry still exists in the OFT and needs to be removed
+                            consoleScreen.innerHTML += "File " + inputSplit[1] + " deleted\n"
+                          }
+                          else{
+                            alert("File could not be deleted because it is in use.")
+                          }                          
                         }
                         else{
-                          deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
-                        }
-                        consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"                      
+                          nodeToRemove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          var open = OFT.openFile(nodeToRemove.file)
+                          if(open){
+                            deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                            OFT.closeFile(open[1]) //by this point, the file is already deleted but its entry still exists in the OFT and needs to be removed
+                            consoleScreen.innerHTML += "File " + inputSplit[1] + " deleted\n"
+                          }
+                          else{
+                            alert("File could not be deleted because it is in use.")
+                          }
+                        }                                              
                         break;
                     //Edit file
                     case "edit":
@@ -94,12 +111,20 @@
                         }
                         else{
                           nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
-                        }                      
-                        let contents = inputSplit.slice(2, inputSplit.length).join(" ")
-                        nodeToEdit.file.write(contents)
-                        console.log(nodeToEdit.file.read())
-                        rootDirectory.updateSize()
-                        consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
+                        }  
+                        var open= OFT.openFile(nodeToEdit.file)
+                        if(open){
+                          let contents = inputSplit.slice(2, inputSplit.length).join(" ")
+                          nodeToEdit.file.write(contents)
+                          console.log(nodeToEdit.file.read())
+                          rootDirectory.updateSize()
+                          OFT.closeFile(open[1])
+                          consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
+                        } 
+                        else{
+                          alert("File is already open in the editor.")
+                        }                   
+                        
                         break;
                     //Rename file or directory
                     case "rename":
@@ -108,15 +133,41 @@
                         }
                         else{
                           nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                        }
+                        var open = OFT.openFile(nodeToEdit.file)
+                        if(open){ 
+                          let newName = inputSplit[2].split(".")[0]
+                          if(nodeToEdit.type === "file")
+                            nodeToEdit.name = newName + "." + nodeToEdit.file.type
+                          else
+                            nodeToEdit.name = newName
+                          nodeToEdit.file.rename(newName)
+                          OFT.closeFile(open[1])
+                          generate()
+                          consoleScreen.innerHTML += "File renamed \n"
+                        }
+                        else{
+                          alert("File cannot be renamed because it is in use.")
+                        }                         
+                        break;
+                    //Move file or directory
+                    case "move":
+                        //nodeToMove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                        if(workingDirectory == rootDirectory){
+                          nodeToMove = findNode(workingDirectory.name + "\\" + inputSplit[1])
+                        }
+                        else{
+                          nodeToMove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         } 
-                        let newName = inputSplit[2].split(".")[0]
-                        if(nodeToEdit.type === "file")
-                          nodeToEdit.name = newName + "." + nodeToEdit.file.type
-                        else
-                          nodeToEdit.name = newName
-                        nodeToEdit.file.rename(newName)
-                        generate()
-                        consoleScreen.innerHTML += "File renamed \n" 
+                        var open = OFT.openFile(nodeToMove.file)
+                        if(open){
+                          newParentPath = inputSplit[2]
+                          move(nodeToMove, newParentPath)
+                          OFT.closeFile(open[1])
+                        }
+                        else{
+                          alert("File cannot be moved because it is in use.")
+                        }                        
                         break;
                     //Display console commands
                     case "help":
@@ -127,8 +178,9 @@
                         "rmdir [folder name] -- Deletes the directory with the provided name in the current working directory \n" +
                         "mkfile [filename.type] -- Creates a file with the provided name and provided type in the current working directory \n" +
                         "rmfile [filename.type] -- Removes the file with the provided name from the current working directory \n" +
-                        "edit [filename.type] [contents] -- Saves the provided contents in the specified file \n"
-                        "rename [filename.type] [new name] -- Changes the name of the specified file to the given input. Will not change file type extension"
+                        "edit [filename.type] [contents] -- Saves the provided contents in the specified file \n" +
+                        "rename [filename.type] [new name] -- Changes the name of the specified file to the given input. Will not change file type extension \n" +
+                        "move [filename.type] [new location] -- Moves the specified file to the given location \n"
                         break;
                     default:
                         consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
@@ -282,6 +334,7 @@ class File{
     console.log("File Name: " + this.name + "\n" +
                 "File Type: " + this.type + "\n" +
                 "File Size: " + this.size + "\n" +
+                "File Location: " + this.location + "\n" +
                 "Date Created: " + this.dateCreated + "\n" +
                 "Date Modified: " + this.dateModified + "\n")
   }
@@ -301,8 +354,8 @@ class Directory{
     for (var i = 0; i < this.type.length; i++)
       this.magicNum += this.type.charCodeAt(i) + " "
     this.size = this.name.length + this.magicNum.length
-    if (this.name === "root")
-      this.location = "root\\"
+    if (this.name === "RootFolder")
+      this.location = "RootFolder"
     else
       this.location = ""
     this.children = []
@@ -311,7 +364,10 @@ class Directory{
   }
 
   addChild(child){
-    child.location = this.location
+    if(this.name === "RootFolder")
+      child.location = this.name
+    else 
+      child.location = this.location + "\\" + this.name
     this.children.push(child)
     this.updateSize()
 
@@ -335,12 +391,30 @@ class Directory{
 
   rename(newName){
     this.name = newName
+    this.updateChildLocation(this.location)   
+  }
+
+  setLocation(location){
+    this.location=location
+  }
+
+  updateChildLocation(location){
+    this.location = location
+    let newLocation = location + "\\" + this.name
+    console.log(newLocation)
+    for(let i = 0; i < this.children.length; i++){
+      if(this.children[i].type === "dir")
+        this.children[i].updateChildLocation(newLocation)
+      else
+        this.children[i].location = newLocation
+    }        
   }
 
   properties(){
     console.log("File Name: " + this.name + "\n" +
                 "File Type: " + this.type + "\n" +
                 "File Size: " + this.size + "\n" +
+                "File Location: " + this.location + "\n" +
                 "Date Created: " + this.dateCreated + "\n" +
                 "Date Modified: " + this.dateModified + "\n")
   }
@@ -354,7 +428,6 @@ class OpenFileTable{
 
   openFile(file){
     let index = 0
-    console.log(this.fileTable)
     //searching the OFT to make sure the file is not already opened
     for(let i = 0; i < this.fileTable.length; i++){
       if(this.fileTable[i] != 0 && file.id === this.fileTable[i].FileID)
@@ -426,6 +499,32 @@ function findNode(filePath){
       
 }
 
+function move(file, newParentPath){  
+    if(file.location === "RootFolder"){
+      oldParent = treeData
+    }      
+    else{
+      oldParent = findNode(file.location)
+    }
+
+    newParent = findNode(newParentPath)
+
+    if(newParentPath === "RootFolder"){
+      file.location = newParent.name
+    }
+    else{
+      file.location = newParent.location + "\\" + newParent.name
+    }
+    
+    newParent.children.push(file)
+    oldParent.children.splice(oldParent.children.indexOf(file), 1)
+    //console.log(newParent.file.location)
+    newParent.file.addChild(file.file)
+    newParent.file.updateChildLocation(newParent.file.location)
+
+    generate()
+}
+
 //Adding something to the tree
 //fileType here refers to whether the file being added is a file or a directory, not the file extension
 function addOne(name, fileType) {
@@ -465,10 +564,12 @@ function addOne(name, fileType) {
     else{
       console.log(workingDirectory.location + "\\" + workingDirectory.name)
       parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+      console.log(parentNode.location + "\\" + parentNode.name)
 
       if(fileType === "folder"){
         newDirectory = new Directory(name)
-        newDirectory.location = parentNode.location + "\\" + parentNode.name
+        //newDirectory.location = workingDirectory.location + "\\" + workingDirectory.name
+        //newDirectory.setLocation(workingDirectory.location + "\\" + workingDirectory.name)
       
         parentNode.children.push({
                 "name": name,
@@ -501,12 +602,14 @@ function addOne(name, fileType) {
 
 //Delete something from tree
 function deleteOne(filePath) {
-
-    let parentPath = filePath.slice(0, filePath.lastIndexOf("\\"))
-    parentNode = findNode(parentPath)
-    
-
     doomedNode = findNode(filePath)
+    if(doomedNode.location === "RootFolder")
+      parentNode = treeData
+    else{
+      let parentPath = filePath.slice(0, filePath.lastIndexOf("\\"))
+      parentNode = findNode(parentPath)
+    }
+    
     index = parentNode.children.indexOf(doomedNode)
     parentNode.file.removeChild(doomedNode.file)
     delete parentNode.children[index]
