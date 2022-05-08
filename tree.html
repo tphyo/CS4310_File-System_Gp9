@@ -8,6 +8,12 @@
   stroke-width: 3px;
 }
 
+.node square {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 3px;
+}
+
 .node text {
   font: 12px sans-serif;
 }
@@ -21,16 +27,83 @@
 </style>
 
 <body>
-    <h2> Create directory</h2>
-    <input id="addOneInput" placeholder="File Name"></input><br>
-    <input id="addOneParent" placeholder="Parent Folder"></input>
-    <button onClick="addOne()">Add File</button>
-    <br>
-    <button onClick="generate()">Generate</button>
-    <br>
-    <input id="deleteOneParent" placeholder="Parent Folder"></input><br>
-    <input id="deleteOneInput" placeholder="File Name"></input>
-    <button onClick="deleteOne()">Delete File</button>
+  <textarea id="consoleScreen" cols="75" rows="20" disabled></textarea><br>
+  <input id="consoleInput" type="text" size="75" onkeypress="consoleEnter(event)"><br>
+
+  <script type="text/javascript">
+      var curConsoleLines = 0;
+      function consoleEnter(x) {
+          if(x.keyCode == 13 || x.code == "Enter") {
+              curConsoleLines++;
+              consoleScreen = document.getElementById("consoleScreen");
+              consoleInput = document.getElementById("consoleInput");
+              consoleScreen.innerHTML += curConsoleLines + "  " + consoleInput.value + "\n";
+              
+              let inputSplit = consoleInput.value.split(" ");
+              
+              switch(inputSplit[0]) {
+                  case "mkdir":
+                      consoleScreen.innerHTML += "Creating directory " + inputSplit[1] + "\n";
+                      addOne(inputSplit[1],"folder");
+                      break;
+                  case "rmdir":
+                      if(inputSplit[1] === "RootFolder"){
+                        consoleScreen.innerHTML += "Nice try!" + "\n"
+                      }
+                      else{
+                          consoleScreen.innerHTML += "Deleting directory " + inputSplit[1] + "\n";
+                          deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])                     
+                      }                      
+                      break;
+                  case "pwd":
+                      if (workingDirectory == rootDirectory)
+                        consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
+                      else
+                      consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                      break;
+                  case "cd":
+                      workingDirectory = findNode(inputSplit[1])
+                      if (workingDirectory == rootDirectory)
+                        consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
+                      else
+                      consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                      break;
+                  case "mkfile": 
+                      consoleScreen.innerHTML += "Creating file " + inputSplit[1] + "\n"                 
+                      addOne(inputSplit[1], "file")
+                      break;
+                  case "rmfile": 
+                      consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"
+                      deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                      break;
+                  case "edit":
+                      nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                      let contents = inputSplit.slice(2, inputSplit.length).join(" ")
+                      nodeToEdit.file.write(contents)
+                      console.log(nodeToEdit.file.read())
+                      rootDirectory.updateSize()
+                      consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
+                      break;
+                  case "help":
+                      consoleScreen.innerHTML += "Recognized commands: \n" +
+                      "cd [file path] -- Sets the current working directory to the provided file path \n" +
+                      "pwd -- Displays the current working directory \n" +
+                      "mkdir [folder name] -- Creates a directory with the provided name in the current working directory \n" +
+                      "rmdir [folder name] -- Deletes the directory with the provided name in the current working directory \n" +
+                      "mkfile [filename.type] -- Creates a file with the provided name and provided type in the current working directory \n" +
+                      "rmfile [filename.type] -- Removes the file with the provided name from the current working directory \n" +
+                      "edit [filename.type] [contents] -- Saves the provided contents in the specified file \n"
+                      break;
+                  default:
+                      consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
+                      break;
+              }
+
+              //Final thing to do is to set the input textfield back to nothing
+              consoleInput.value = "";
+          }   
+      }
+  </script>
     
 
 <!-- load the d3.js library -->	
@@ -40,6 +113,7 @@
 var treeData =
   {
     "name": "RootFolder",
+    "type": "folder",
     "children": [
     {"name": "Folder1",
         "type": "folder",
@@ -159,6 +233,7 @@ class Directory{
   updateSize(){
     this.size = this.name.length + this.magicNum.length    
     for(let i = 0; i < this.children.length; i++){
+      //console.log(this.children[i])
       if(this.children[i].type === "dir"){
         this.children[i].updateSize()
       }        
@@ -177,7 +252,7 @@ class Directory{
 }
 
 rootDirectory = new Directory("RootFolder")
-
+workingDirectory = rootDirectory
 folder1 = new Directory("Folder1")
 rootDirectory.addChild(folder1)
 //console.log(newDirectory1.location)
@@ -190,19 +265,19 @@ treeData.file = rootDirectory;
 treeData.children[0].file = folder1;
 treeData.children[1].file = folder2;
 
-//takes in an absolute file path provided by a user and returns the node within treeData so that the node can be added to the tree
+//takes in an absolute file path provided by a user and returns the node within treeData
 function findNode(filePath){
   let path = filePath.split("\\")
   //console.log(path)
   var current = treeData
   let j = 1
 
-  while(j < path.length){
+  while(j < path.length && current.type !== "file"){
     for(let i = 0; i < current.children.length; i++){
         if (current.children[i].name === path[j]){
         current = current.children[i]
-        //console.log(current)
         j++
+        break;
         }          
     }
   }  
@@ -213,39 +288,53 @@ function findNode(filePath){
 }
 
 //Adding something to the tree
-function addOne() {
-  
-    let addOneParent = document.getElementById("addOneParent").value;
-    let addOneInput = document.getElementById("addOneInput").value; 
+//fileType here refers to whether the file being added is a file or a directory, not the file extension
+function addOne(name, fileType) {
 
-    newDirectory = new Directory(addOneInput)
-    parentNode = findNode(addOneParent)
-    parentNode.children.push({
-                "name": addOneInput,
+    if(workingDirectory == rootDirectory)
+        parentNode = findNode(workingDirectory.name)
+    else
+        console.log(workingDirectory.location + "\\" + workingDirectory.name)
+        parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+
+    if(fileType === "folder"){
+      newDirectory = new Directory(name)
+      
+      parentNode.children.push({
+                "name": name,
                 "type": "folder",
                 "file": newDirectory,
                 "children": [],
-                "location": parentNode.location + "\\" + parentNode.name + "\\" + addOneInput
-    })
-    parentNode.file.addChild(newDirectory)
+                "location": parentNode.location + "\\" + parentNode.name
+      })
+      parentNode.file.addChild(newDirectory)
+    }
+    else{
+      nameAndType = name.split(".")
+      newFile = new File(nameAndType[0],nameAndType[1])
+      //parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+      parentNode.children.push({
+                "name": name,
+                "type": "file",
+                "file": newFile,
+                "location": parentNode.location + "\\" + parentNode.name
+      })
+      parentNode.file.addChild(newFile)
+    }
+    
     //workingDir.addChild(newDirectory)
     //console.log(newDirectory.location)
     generate();
 }
 
 //Delete something from tree
-function deleteOne(filePath = "") {
-    let deleteOneParent = document.getElementById("deleteOneParent").value;
-    let deleteOneInput = document.getElementById("deleteOneInput").value; 
+function deleteOne(filePath) {
+    //let deleteOneParent = document.getElementById("deleteOneParent").value;
+    //let deleteOneInput = document.getElementById("deleteOneInput").value;     
     
-    if(filePath === ""){
-      filePath = deleteOneParent + "\\" + deleteOneInput
-      parentNode = findNode(deleteOneParent)    
-    }
-    else{
        let parentPath = filePath.slice(0, filePath.lastIndexOf("\\"))
        parentNode = findNode(parentPath)
-    }
+    
 
     doomedNode = findNode(filePath)
     index = parentNode.children.indexOf(doomedNode)
@@ -311,13 +400,16 @@ function update(source) {
     })
     .on('click', click);
 
-  // Add Circle for the nodes
-  nodeEnter.append('circle')
-      .attr('class', 'node')
-      .attr('r', 1e-6)
-      .style("fill", function(d) {
-          return d._children ? "lightsteelblue" : "#fff";
-      });
+    // Add Circle for the nodes
+   nodeEnter.append('circle')
+       .attr('class', 'node')
+       .attr('r', 1e-6)
+       .style("fill", function(d) {
+         if(d.data.type == "folder")
+           return d._children ? "lightsteelblue" : "#fff";
+         else
+           return "steelblue"
+       });
 
   // Add labels for the nodes
   nodeEnter.append('text')
@@ -340,14 +432,16 @@ function update(source) {
         return "translate(" + d.y + "," + d.x + ")";
      });
 
-  // Update the node attributes and style
-  nodeUpdate.select('circle.node')
+    // Update the node attributes and style
+    nodeUpdate.select('circle.node')
     .attr('r', 10)
     .style("fill", function(d) {
-        return d._children ? "lightsteelblue" : "#fff";
+        if(d.data.type == "folder")
+          return d._children ? "lightsteelblue" : "#fff";
+        else
+          return "steelblue"
     })
     .attr('cursor', 'pointer');
-
 
   // Remove any exiting nodes
   var nodeExit = node.exit().transition()
