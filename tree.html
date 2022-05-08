@@ -21,106 +21,175 @@
 </style>
 
 <body>
-  <textarea id="consoleScreen" cols="75" rows="20" disabled></textarea><br>
-  <input id="consoleInput" type="text" size="75" onkeypress="consoleEnter(event)"><br>
-
-  <script type="text/javascript">
-      var curConsoleLines = 0;
-      function consoleEnter(x) {
-          if(x.keyCode == 13 || x.code == "Enter") {
-              curConsoleLines++;
-              consoleScreen = document.getElementById("consoleScreen");
-              consoleInput = document.getElementById("consoleInput");
-              consoleScreen.innerHTML += curConsoleLines + "  " + consoleInput.value + "\n";
-              
-              let inputSplit = consoleInput.value.split(" ");
-              
-              switch(inputSplit[0]) {
-                  //Make directory
-                  case "mkdir":
-                      consoleScreen.innerHTML += "Creating directory " + inputSplit[1] + "\n";
-                      addOne(inputSplit[1],"folder");
-                      break;
-                  //Remove directory
-                  case "rmdir":
-                      if(inputSplit[1] === "RootFolder"){
-                        consoleScreen.innerHTML += "Nice try!" + "\n"
-                      }
-                      else{
-                          consoleScreen.innerHTML += "Deleting directory " + inputSplit[1] + "\n";
-                          deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])                     
-                      }                      
-                      break;
-                  //Print working directory
-                  case "pwd":
-                      if (workingDirectory == rootDirectory)
-                        consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
-                      else
-                      consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
-                      break;
-                  //Change directory
-                  case "cd":                      
-                      if (inputSplit[1] === "RootFolder" || inputSplit[1] === "Home" || inputSplit[1] === "home"){
-                        console.log("here")
-                        workingDirectory = rootDirectory
-                        consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
-                      }                       
-                      else{
-                        workingDirectory = findNode(inputSplit[1])
+  <div style="display: table">
+    <div style="display: table-cell">
+      <textarea id="consoleScreen" cols="75" rows="20" style="resize: none" disabled></textarea><br>
+      <input id="consoleInput" type="text" size="75" onkeypress="consoleEnter(event)"><br>
+  
+      <script type="text/javascript">
+        var curConsoleLines = 0;
+        function consoleEnter(x) {
+            if(x.keyCode == 13 || x.code == "Enter") {
+                curConsoleLines++;
+                consoleScreen = document.getElementById("consoleScreen");
+                consoleInput = document.getElementById("consoleInput");
+                consoleScreen.innerHTML += curConsoleLines + "  " + consoleInput.value + "\n";
+                
+                let inputSplit = consoleInput.value.split(" ");
+                
+                switch(inputSplit[0]) {
+                    //Make directory
+                    case "mkdir":
+                        consoleScreen.innerHTML += "Creating directory " + inputSplit[1] + "\n";
+                        addOne(inputSplit[1],"folder");
+                        break;
+                    //Remove directory
+                    case "rmdir":
+                        if(inputSplit[1] === "RootFolder"){
+                          consoleScreen.innerHTML += "Nice try!" + "\n"
+                        }
+                        else{
+                            consoleScreen.innerHTML += "Deleting directory " + inputSplit[1] + "\n";
+                            deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])                     
+                        }                      
+                        break;
+                    //Print working directory
+                    case "pwd":
+                        if (workingDirectory == rootDirectory)
+                          consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
+                        else
                         consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
-                      }                        
-                      break;
-                  //Create new file
-                  case "mkfile": 
-                      consoleScreen.innerHTML += "Creating file " + inputSplit[1] + "\n"                 
-                      addOne(inputSplit[1], "file")
-                      break;
-                  //Remove file
-                  case "rmfile":
-                      if(workingDirectory == rootDirectory){
-                        deleteOne(workingDirectory.name + "\\" + inputSplit[1])
-                      }
-                      else{
-                        deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
-                      }
-                      consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"                      
-                      break;
-                  //Edit file
-                  case "edit":
-                      if(workingDirectory == rootDirectory){
-                        nodeToEdit = findNode(workingDirectory.name + "\\" + inputSplit[1])
-                      }
-                      else{
-                        nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
-                      }                      
-                      let contents = inputSplit.slice(2, inputSplit.length).join(" ")
-                      nodeToEdit.file.write(contents)
-                      console.log(nodeToEdit.file.read())
-                      rootDirectory.updateSize()
-                      consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
-                      break;
-                  //Display console commands
-                  case "help":
-                      consoleScreen.innerHTML += "Recognized commands: \n" +
-                      "cd [file path] -- Sets the current working directory to the provided file path \n" +
-                      "pwd -- Displays the current working directory \n" +
-                      "mkdir [folder name] -- Creates a directory with the provided name in the current working directory \n" +
-                      "rmdir [folder name] -- Deletes the directory with the provided name in the current working directory \n" +
-                      "mkfile [filename.type] -- Creates a file with the provided name and provided type in the current working directory \n" +
-                      "rmfile [filename.type] -- Removes the file with the provided name from the current working directory \n" +
-                      "edit [filename.type] [contents] -- Saves the provided contents in the specified file \n"
-                      break;
-                  default:
-                      consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
-                      break;
-              }
+                        break;
+                    //Change directory
+                    case "cd":                      
+                        if (inputSplit[1] === "RootFolder" || inputSplit[1] === "Home" || inputSplit[1] === "home"){
+                          console.log("here")
+                          workingDirectory = rootDirectory
+                          consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
+                        }                       
+                        else{
+                          workingDirectory = findNode(inputSplit[1])
+                          consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                        }                        
+                        break;
+                    //Create new file
+                    case "mkfile": 
+                        consoleScreen.innerHTML += "Creating file " + inputSplit[1] + "\n"                 
+                        addOne(inputSplit[1], "file")
+                        break;
+                    //Remove file
+                    case "rmfile":
+                        if(workingDirectory == rootDirectory){
+                          deleteOne(workingDirectory.name + "\\" + inputSplit[1])
+                        }
+                        else{
+                          deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                        }
+                        consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"                      
+                        break;
+                    //Edit file
+                    case "edit":
+                        if(workingDirectory == rootDirectory){
+                          nodeToEdit = findNode(workingDirectory.name + "\\" + inputSplit[1])
+                        }
+                        else{
+                          nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                        }                      
+                        let contents = inputSplit.slice(2, inputSplit.length).join(" ")
+                        nodeToEdit.file.write(contents)
+                        console.log(nodeToEdit.file.read())
+                        rootDirectory.updateSize()
+                        consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
+                        break;
+                    //Rename file or directory
+                    case "rename":
+                        if(workingDirectory == rootDirectory){
+                          nodeToEdit = findNode(workingDirectory.name + "\\" + inputSplit[1])
+                        }
+                        else{
+                          nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                        } 
+                        let newName = inputSplit[2].split(".")[0]
+                        if(nodeToEdit.type === "file")
+                          nodeToEdit.name = newName + "." + nodeToEdit.file.type
+                        else
+                          nodeToEdit.name = newName
+                        nodeToEdit.file.rename(newName)
+                        generate()
+                        consoleScreen.innerHTML += "File renamed \n" 
+                        break;
+                    //Display console commands
+                    case "help":
+                        consoleScreen.innerHTML += "Recognized commands: \n" +
+                        "cd [file path] -- Sets the current working directory to the provided file path \n" +
+                        "pwd -- Displays the current working directory \n" +
+                        "mkdir [folder name] -- Creates a directory with the provided name in the current working directory \n" +
+                        "rmdir [folder name] -- Deletes the directory with the provided name in the current working directory \n" +
+                        "mkfile [filename.type] -- Creates a file with the provided name and provided type in the current working directory \n" +
+                        "rmfile [filename.type] -- Removes the file with the provided name from the current working directory \n" +
+                        "edit [filename.type] [contents] -- Saves the provided contents in the specified file \n"
+                        "rename [filename.type] [new name] -- Changes the name of the specified file to the given input. Will not change file type extension"
+                        break;
+                    default:
+                        consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
+                        break;
+                }
+  
+                //Final thing to do is to set the input textfield back to nothing
+                consoleInput.value = "";
+            }   
+        }
+      </script>
+    </div>
+    <div id="editorDiv" style="display: none">
+      <textarea id="textEditor" cols="75" rows="20" style="resize: none"></textarea><br>
+      <p style="text-align:center"><button style="margin-right:24px" onclick = "saveChanges()">Save</button><button onclick="closeEditor()">Close</button></p>  
 
-              //Final thing to do is to set the input textfield back to nothing
-              consoleInput.value = "";
-          }   
-      }
-  </script>
-    
+      <script>
+        var activeFile
+        var fileIndex
+        var editBlock = document.getElementById("editorDiv")
+        var editor = document.getElementById("textEditor")
+        var writing = false
+
+        function fileWrite(file){
+          if (writing === false || activeFile === file){
+            fileOpen = OFT.openFile(file)  
+          
+            if(fileOpen){ 
+              writing = true
+              consoleScreen.innerHTML += "Editing " + file.name + " >>> \n"
+              activeFile = file
+              console.log(file.read())
+              fileIndex = fileOpen[1]
+
+              editBlock.style.display = "table-cell"
+              editor.value = file.read()
+            }
+            else{
+              alert("File is already in use!")
+            }
+          }
+          else{
+            alert("Please save your changes and close the editor before attempting to edit another file.")
+          }
+        }
+
+        function closeEditor(){
+          activeFile = ""
+          writing = false
+          OFT.closeFile(fileIndex)
+          editBlock.style.display = "none"
+          editor.value = ""
+        }
+
+        function saveChanges(){
+          activeFile.write(editor.value)
+          rootDirectory.updateSize()          
+        }
+      </script>
+    </div>
+  </div>
 
 <!-- load the d3.js library -->	
 <script src="https://d3js.org/d3.v4.min.js"></script>
@@ -186,6 +255,7 @@ update(root);
 
 class File{
   constructor(name, type){
+    this.id = [Math.floor(Math.random() * 101),Math.floor(Math.random() * 101),Math.floor(Math.random() * 101)].join(" ")
     this.name = name
     this.type = type    
     this.magicNum = ""
@@ -215,10 +285,16 @@ class File{
                 "Date Created: " + this.dateCreated + "\n" +
                 "Date Modified: " + this.dateModified + "\n")
   }
+
+  rename(newName){
+    this.name = newName
+    this.size = this.name.length + this.magicNum.length + this.contents.length
+  }
 }
 
 class Directory{
   constructor(name){
+    this.id = [Math.floor(Math.random() * 101),Math.floor(Math.random() * 101),Math.floor(Math.random() * 101)].join(" ")
     this.name = name
     this.type = "dir"
     this.magicNum = ""
@@ -257,6 +333,10 @@ class Directory{
     }      
   }
 
+  rename(newName){
+    this.name = newName
+  }
+
   properties(){
     console.log("File Name: " + this.name + "\n" +
                 "File Type: " + this.type + "\n" +
@@ -266,6 +346,49 @@ class Directory{
   }
 
 }
+
+class OpenFileTable{
+  constructor(){
+    this.fileTable = new Array(100).fill(0);
+  }
+
+  openFile(file){
+    let index = 0
+    console.log(this.fileTable)
+    //searching the OFT to make sure the file is not already opened
+    for(let i = 0; i < this.fileTable.length; i++){
+      if(this.fileTable[i] != 0 && file.id === this.fileTable[i].FileID)
+        return false
+    }
+    //If file is not already in OFT, a new entry is created.
+    //The method returns "true" along with the index of the file's
+    //entry in the OFT.
+    let tableEntry = {
+      "FileID": file.id,
+      "FileSize": file.size,
+      "FileLocation": file.location
+    }
+    //places the entry for the file in the first empty space it finds
+    for(index; index < this.fileTable.length; index){
+      if (this.fileTable[index] === 0){
+          this.fileTable[index] = tableEntry
+          break;
+        }
+    }
+      
+
+
+    return [true, index]
+  }
+
+  //Only the "process" which opened the file will have access to this index,
+  //ensuring it can only be closed by the process using it.
+  closeFile(index){
+    this.fileTable[index] = 0
+  }
+}
+
+OFT = new OpenFileTable()
 
 rootDirectory = new Directory("RootFolder")
 workingDirectory = rootDirectory
@@ -314,6 +437,7 @@ function addOne(name, fileType) {
 
       if(fileType === "folder"){
         newDirectory = new Directory(name)
+        newDirectory.location = parentNode.name
       
         parentNode.children.push({
                 "name": name,
@@ -327,7 +451,8 @@ function addOne(name, fileType) {
       else{
         nameAndType = name.split(".")
         newFile = new File(nameAndType[0],nameAndType[1])
-        //parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+        newFile.location = parentNode.name
+
         parentNode.children.push({
                 "name": name,
                 "type": "file",
@@ -343,6 +468,7 @@ function addOne(name, fileType) {
 
       if(fileType === "folder"){
         newDirectory = new Directory(name)
+        newDirectory.location = parentNode.location + "\\" + parentNode.name
       
         parentNode.children.push({
                 "name": name,
@@ -356,7 +482,8 @@ function addOne(name, fileType) {
       else{
         nameAndType = name.split(".")
         newFile = new File(nameAndType[0],nameAndType[1])
-        //parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+        newFile.location = parentNode.location + "\\" + parentNode.name
+
         parentNode.children.push({
                 "name": name,
                 "type": "file",
@@ -556,7 +683,7 @@ function update(source) {
     //console.log(d.data.type)
     console.log(d.data.file.properties())
     if(d.data.type === "file")
-      alert(d.data.file.read())      
+      fileWrite(d.data.file)
     if (d.children) {
         d._children = d.children;
         d.children = null;
