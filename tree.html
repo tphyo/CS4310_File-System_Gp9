@@ -76,13 +76,23 @@
                       addOne(inputSplit[1], "file")
                       break;
                   //Remove file
-                  case "rmfile": 
-                      consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"
-                      deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                  case "rmfile":
+                      if(workingDirectory == rootDirectory){
+                        deleteOne(workingDirectory.name + "\\" + inputSplit[1])
+                      }
+                      else{
+                        deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                      }
+                      consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"                      
                       break;
                   //Edit file
                   case "edit":
-                      nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                      if(workingDirectory == rootDirectory){
+                        nodeToEdit = findNode(workingDirectory.name + "\\" + inputSplit[1])
+                      }
+                      else{
+                        nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                      }                      
                       let contents = inputSplit.slice(2, inputSplit.length).join(" ")
                       nodeToEdit.file.write(contents)
                       console.log(nodeToEdit.file.read())
@@ -189,7 +199,7 @@ class File{
   }
 
   read(){
-    console.log(this.contents)
+    return this.contents
   }
 
   write(content){
@@ -364,11 +374,9 @@ function addOne(name, fileType) {
 
 //Delete something from tree
 function deleteOne(filePath) {
-    //let deleteOneParent = document.getElementById("deleteOneParent").value;
-    //let deleteOneInput = document.getElementById("deleteOneInput").value;     
-    
-       let parentPath = filePath.slice(0, filePath.lastIndexOf("\\"))
-       parentNode = findNode(parentPath)
+
+    let parentPath = filePath.slice(0, filePath.lastIndexOf("\\"))
+    parentNode = findNode(parentPath)
     
 
     doomedNode = findNode(filePath)
@@ -547,6 +555,8 @@ function update(source) {
     //console.log(d.data.name)
     //console.log(d.data.type)
     console.log(d.data.file.properties())
+    if(d.data.type === "file")
+      alert(d.data.file.read())      
     if (d.children) {
         d._children = d.children;
         d.children = null;
