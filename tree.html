@@ -8,12 +8,6 @@
   stroke-width: 3px;
 }
 
-.node square {
-  fill: #fff;
-  stroke: steelblue;
-  stroke-width: 3px;
-}
-
 .node text {
   font: 12px sans-serif;
 }
@@ -42,10 +36,12 @@
               let inputSplit = consoleInput.value.split(" ");
               
               switch(inputSplit[0]) {
+                  //Make directory
                   case "mkdir":
                       consoleScreen.innerHTML += "Creating directory " + inputSplit[1] + "\n";
                       addOne(inputSplit[1],"folder");
                       break;
+                  //Remove directory
                   case "rmdir":
                       if(inputSplit[1] === "RootFolder"){
                         consoleScreen.innerHTML += "Nice try!" + "\n"
@@ -55,27 +51,36 @@
                           deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])                     
                       }                      
                       break;
+                  //Print working directory
                   case "pwd":
                       if (workingDirectory == rootDirectory)
                         consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
                       else
                       consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
                       break;
-                  case "cd":
-                      workingDirectory = findNode(inputSplit[1])
-                      if (workingDirectory == rootDirectory)
+                  //Change directory
+                  case "cd":                      
+                      if (inputSplit[1] === "RootFolder" || inputSplit[1] === "Home" || inputSplit[1] === "home"){
+                        console.log("here")
+                        workingDirectory = rootDirectory
                         consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
-                      else
-                      consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                      }                       
+                      else{
+                        workingDirectory = findNode(inputSplit[1])
+                        consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                      }                        
                       break;
+                  //Create new file
                   case "mkfile": 
                       consoleScreen.innerHTML += "Creating file " + inputSplit[1] + "\n"                 
                       addOne(inputSplit[1], "file")
                       break;
+                  //Remove file
                   case "rmfile": 
                       consoleScreen.innerHTML += "Deleting file " + inputSplit[1] + "\n"
                       deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                       break;
+                  //Edit file
                   case "edit":
                       nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                       let contents = inputSplit.slice(2, inputSplit.length).join(" ")
@@ -84,6 +89,7 @@
                       rootDirectory.updateSize()
                       consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
                       break;
+                  //Display console commands
                   case "help":
                       consoleScreen.innerHTML += "Recognized commands: \n" +
                       "cd [file path] -- Sets the current working directory to the provided file path \n" +
@@ -291,37 +297,66 @@ function findNode(filePath){
 //fileType here refers to whether the file being added is a file or a directory, not the file extension
 function addOne(name, fileType) {
 
-    if(workingDirectory == rootDirectory)
-        parentNode = findNode(workingDirectory.name)
-    else
-        console.log(workingDirectory.location + "\\" + workingDirectory.name)
-        parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+    if(workingDirectory == rootDirectory){
+      //parentNode = findNode(workingDirectory.name)
+      parentNode = treeData
+      console.log(parentNode)
 
-    if(fileType === "folder"){
-      newDirectory = new Directory(name)
+      if(fileType === "folder"){
+        newDirectory = new Directory(name)
       
-      parentNode.children.push({
+        parentNode.children.push({
+                "name": name,
+                "type": "folder",
+                "file": newDirectory,
+                "children": [],
+                "location": parentNode.name
+        })
+        parentNode.file.addChild(newDirectory)
+      }
+      else{
+        nameAndType = name.split(".")
+        newFile = new File(nameAndType[0],nameAndType[1])
+        //parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+        parentNode.children.push({
+                "name": name,
+                "type": "file",
+                "file": newFile,
+                "location": parentNode.name
+        })
+        parentNode.file.addChild(newFile)
+      }
+    }        
+    else{
+      console.log(workingDirectory.location + "\\" + workingDirectory.name)
+      parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+
+      if(fileType === "folder"){
+        newDirectory = new Directory(name)
+      
+        parentNode.children.push({
                 "name": name,
                 "type": "folder",
                 "file": newDirectory,
                 "children": [],
                 "location": parentNode.location + "\\" + parentNode.name
-      })
-      parentNode.file.addChild(newDirectory)
-    }
-    else{
-      nameAndType = name.split(".")
-      newFile = new File(nameAndType[0],nameAndType[1])
-      //parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
-      parentNode.children.push({
+        })
+        parentNode.file.addChild(newDirectory)
+      }
+      else{
+        nameAndType = name.split(".")
+        newFile = new File(nameAndType[0],nameAndType[1])
+        //parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+        parentNode.children.push({
                 "name": name,
                 "type": "file",
                 "file": newFile,
                 "location": parentNode.location + "\\" + parentNode.name
-      })
-      parentNode.file.addChild(newFile)
+        })
+        parentNode.file.addChild(newFile)
+      }
     }
-    
+
     //workingDir.addChild(newDirectory)
     //console.log(newDirectory.location)
     generate();
