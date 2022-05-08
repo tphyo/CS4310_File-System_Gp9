@@ -46,11 +46,15 @@
                     //Remove directory
                     case "rmdir":
                         if(inputSplit[1] === "RootFolder"){
-                          consoleScreen.innerHTML += "Nice try!" + "\n"
+                          consoleScreen.innerHTML += "Stop trying to kill the file system!" + "\n"
                         }
                         else{
-                            consoleScreen.innerHTML += "Deleting directory " + inputSplit[1] + "\n";
-                            deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])                     
+                            if(workingDirectory == rootDirectory)
+                              deleteOne(workingDirectory.name + "\\" + inputSplit[1]) 
+                            else
+                              deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1]) 
+                            consoleScreen.innerHTML += "Directory " + inputSplit[1] + " deleted\n";
+                                                
                         }                      
                         break;
                     //Print working directory
@@ -62,8 +66,7 @@
                         break;
                     //Change directory
                     case "cd":                      
-                        if (inputSplit[1] === "RootFolder" || inputSplit[1] === "Home" || inputSplit[1] === "home"){
-                          console.log("here")
+                        if (inputSplit[1] === "RootFolder" || inputSplit[1] === "Home" || inputSplit[1] === "home"){                          
                           workingDirectory = rootDirectory
                           consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
                         }                       
@@ -78,7 +81,7 @@
                         addOne(inputSplit[1], "file")
                         break;
                     //Remove file
-                    case "rmfile":
+                    case "rmfile":                      
                         if(workingDirectory == rootDirectory){
                           nodeToRemove = findNode(workingDirectory.name + "\\" + inputSplit[1])
                           var open = OFT.openFile(nodeToRemove.file)
@@ -152,7 +155,6 @@
                         break;
                     //Move file or directory
                     case "move":
-                        //nodeToMove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         if(workingDirectory == rootDirectory){
                           nodeToMove = findNode(workingDirectory.name + "\\" + inputSplit[1])
                         }
@@ -169,18 +171,26 @@
                           alert("File cannot be moved because it is in use.")
                         }                        
                         break;
+                    //List all files in a given directory
+                    case "list": 
+                        if(inputSplit[1])
+                          list(inputSplit[1])
+                        else
+                          list()
+                        break;
                     //Display console commands
                     case "help":
                         consoleScreen.innerHTML += "Recognized commands: \n" +
-                        "cd [file path] -- Sets the current working directory to the provided file path \n" +
+                        "cd [file path] -- Sets the current working directory to the provided file \n\tpath \n" +
                         "pwd -- Displays the current working directory \n" +
-                        "mkdir [folder name] -- Creates a directory with the provided name in the current working directory \n" +
-                        "rmdir [folder name] -- Deletes the directory with the provided name in the current working directory \n" +
-                        "mkfile [filename.type] -- Creates a file with the provided name and provided type in the current working directory \n" +
-                        "rmfile [filename.type] -- Removes the file with the provided name from the current working directory \n" +
-                        "edit [filename.type] [contents] -- Saves the provided contents in the specified file \n" +
-                        "rename [filename.type] [new name] -- Changes the name of the specified file to the given input. Will not change file type extension \n" +
-                        "move [filename.type] [new location] -- Moves the specified file to the given location \n"
+                        "mkdir [folder name] -- Creates a directory with the provided name in the \n\tcurrent working directory \n" +
+                        "rmdir [folder name] -- Deletes the directory with the provided name in the \n\tcurrent working directory \n" +
+                        "mkfile [filename.type] -- Creates a file with the provided name and provided \n\ttype in the current working directory \n" +
+                        "rmfile [filename.type] -- Removes the file with the provided name from the \n\tcurrent working directory \n" +
+                        "edit [filename.type] [contents] -- Saves the provided contents in the \n\tspecified file \n" +
+                        "rename [filename.type] [new name] -- Changes the name of the specified file \n\tto the given input. Will not change file type extension \n" +
+                        "move [filename.type] [new location] -- Moves the specified file to the given \n\tlocation \n" +
+                        "list [file path] -- Lists all files and folders in the specified directory \n\tor in the current working directory if no file path is given\n"
                         break;
                     default:
                         consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
@@ -480,7 +490,7 @@ treeData.children[1].file = folder2;
 //takes in an absolute file path provided by a user and returns the node within treeData
 function findNode(filePath){
   let path = filePath.split("\\")
-  //console.log(path)
+  console.log(path)
   var current = treeData
   let j = 1
 
@@ -497,6 +507,16 @@ function findNode(filePath){
   //console.log(current)
   return current
       
+}
+
+function list(filePath = ""){
+  if(filePath === "")
+    node = workingDirectory   
+  else
+    node = findNode(filePath)
+
+  for(let i = 0; i < node.children.length; i++)
+      consoleScreen.innerHTML += node.children[i].name + "\n"
 }
 
 function move(file, newParentPath){  
@@ -623,7 +643,7 @@ function generate() {
     root.x0 = height / 2;
     root.y0 = 0;
     rootDirectory.updateSize();
-    console.log(rootDirectory.properties())
+    //console.log(rootDirectory.properties())
 
     // Collapse after the second level
     root.children.forEach(collapse);
