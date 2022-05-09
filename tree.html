@@ -40,8 +40,32 @@
                 switch(inputSplit[0]) {
                     //Make directory
                     case "mkdir":
-                        consoleScreen.innerHTML += "Creating directory " + inputSplit[1] + "\n";
-                        addOne(inputSplit[1],"folder");
+                        let newFolderName = inputSplit[1]
+                        let folderExists = false
+                        
+                        for(let i = 0; i < workingDirectory.children.length; i++){
+                          if (workingDirectory == rootDirectory)
+                            //treeData and rootDirectory contain the same information, but they work a little differently
+                            //because they serve different purposes
+                            //This quick swap just saves us a minor headache
+                            workingDirectory = treeData 
+                          if(workingDirectory.children[i].name === newFolderName){
+                            alert("A directory with that name already exists in this location")
+                            consoleScreen.innerHTML += "Could not create directory\n"
+                            folderExists = true
+                            break;
+                          }
+                        }
+                        if(!folderExists){
+                          if(workingDirectory == treeData)
+                            workingDirectory = rootDirectory
+                          addOne(newFolderName, "folder")
+                          consoleScreen.innerHTML += "Directory " + inputSplit[1] + " created\n"                                           
+                        }
+                        else{
+                          if(workingDirectory == treeData)
+                            workingDirectory = rootDirectory
+                        }                        
                         break;
                     //Remove directory
                     case "rmdir":
@@ -77,8 +101,32 @@
                         break;
                     //Create new file
                     case "mkfile": 
-                        consoleScreen.innerHTML += "Creating file " + inputSplit[1] + "\n"                 
-                        addOne(inputSplit[1], "file")
+                        let newFileName = inputSplit[1]
+                        let exists = false
+                        
+                        for(let i = 0; i < workingDirectory.children.length; i++){
+                          if (workingDirectory == rootDirectory)
+                            //treeData and rootDirectory contain the same information, but they work a little differently
+                            //because they serve different purposes
+                            //This quick swap just saves us a minor headache
+                            workingDirectory = treeData 
+                          if(workingDirectory.children[i].name === newFileName){
+                            alert("A file with that name already exists in this location")
+                            consoleScreen.innerHTML += "Could not create file\n"
+                            exists = true
+                            break;
+                          }
+                        }
+                        if(!exists){
+                          if(workingDirectory == treeData)
+                            workingDirectory = rootDirectory
+                          addOne(newFileName, "file")
+                          consoleScreen.innerHTML += "File " + inputSplit[1] + " created\n"                                           
+                        }
+                        else{
+                          if(workingDirectory == treeData)
+                            workingDirectory = rootDirectory
+                        }
                         break;
                     //Remove file
                     case "rmfile":                      
@@ -257,6 +305,10 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
+/**********************************************
+********* d3 library code starts here *********
+***********************************************/
+
 var treeData =
   {
     "name": "RootFolder",
@@ -308,12 +360,9 @@ root.children.forEach(collapse);
 
 update(root);
 
-/**************************************************
-*              Our code starts here
-*              Our code starts here
-*              Our code starts here
-*              Our code starts here
-***************************************************/
+/**********************************************
+********** d3 library code ends here **********
+***********************************************/
 
 class File{
   constructor(name, type){
@@ -388,10 +437,17 @@ class Directory{
     this.updateSize()
   }
 
+  //Typically only called on the root directory
+  //Updates the size of everything beneath the directory in the tree, 
+  //then adds it all up and sets it as the size of the directory
+
+  //This works quasi-recursively, in that every directory beneath the
+  //directory invoking the function undergoes this process as well to
+  //have its own size updated properly before it is added to the parent
+  //directory's size
   updateSize(){
     this.size = this.name.length + this.magicNum.length    
     for(let i = 0; i < this.children.length; i++){
-      //console.log(this.children[i])
       if(this.children[i].type === "dir"){
         this.children[i].updateSize()
       }        
@@ -404,10 +460,10 @@ class Directory{
     this.updateChildLocation(this.location)   
   }
 
-  setLocation(location){
-    this.location=location
-  }
-
+  //Called when renaming or moving the directory
+  //Works quasi-recursively to update the location of the directory
+  //and all of its children whenever the name or location of the
+  //directory are changed
   updateChildLocation(location){
     this.location = location
     let newLocation = location + "\\" + this.name
@@ -490,7 +546,6 @@ treeData.children[1].file = folder2;
 //takes in an absolute file path provided by a user and returns the node within treeData
 function findNode(filePath){
   let path = filePath.split("\\")
-  console.log(path)
   var current = treeData
   let j = 1
 
@@ -504,7 +559,6 @@ function findNode(filePath){
     }
   }  
     
-  //console.log(current)
   return current
       
 }
@@ -552,7 +606,6 @@ function addOne(name, fileType) {
     if(workingDirectory == rootDirectory){
       //parentNode = findNode(workingDirectory.name)
       parentNode = treeData
-      console.log(parentNode)
 
       if(fileType === "folder"){
         newDirectory = new Directory(name)
@@ -582,14 +635,10 @@ function addOne(name, fileType) {
       }
     }        
     else{
-      console.log(workingDirectory.location + "\\" + workingDirectory.name)
       parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
-      console.log(parentNode.location + "\\" + parentNode.name)
 
       if(fileType === "folder"){
         newDirectory = new Directory(name)
-        //newDirectory.location = workingDirectory.location + "\\" + workingDirectory.name
-        //newDirectory.setLocation(workingDirectory.location + "\\" + workingDirectory.name)
       
         parentNode.children.push({
                 "name": name,
@@ -643,7 +692,6 @@ function generate() {
     root.x0 = height / 2;
     root.y0 = 0;
     rootDirectory.updateSize();
-    //console.log(rootDirectory.properties())
 
     // Collapse after the second level
     root.children.forEach(collapse);
@@ -651,12 +699,9 @@ function generate() {
     update(root);
 }
 
-/******************************************************
-*         Don't make changes below this point!
-*         Don't make changes below this point!
-*         Don't make changes below this point!
-*         Don't make changes below this point!
-*******************************************************/
+/**********************************************
+********* d3 library code starts here *********
+***********************************************/
 
 // Collapse the node and all its children
 function collapse(d) {
