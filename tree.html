@@ -89,13 +89,24 @@
                         consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
                         break;
                     //Change directory
-                    case "cd":                      
+                    case "cd":     
+                        //If changing directory to root node                 
                         if (inputSplit[1] === "RootFolder" || inputSplit[1] === "Home" || inputSplit[1] === "home"){                          
                           workingDirectory = rootDirectory
                           consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
                         }                       
                         else{
-                          workingDirectory = findNode(inputSplit[1])
+                          //If absolute path is given
+                          if(inputSplit[1].split("\\")[0] === "RootFolder"){
+                            workingDirectory = findNode(inputSplit[1])                            
+                          }
+                          //If relative path is given
+                          else{
+                            if(workingDirectory == rootDirectory)
+                              workingDirectory = findNode(workingDirectory.name + "\\" + inputSplit[1])  
+                            else
+                              workingDirectory = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          }
                           consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
                         }                        
                         break;
@@ -270,7 +281,7 @@
               writing = true
               consoleScreen.innerHTML += "Editing " + file.name + " >>> \n"
               activeFile = file
-              console.log(file.read())
+              //console.log(file.read())
               fileIndex = fileOpen[1]
 
               editBlock.style.display = "table-cell"
@@ -305,9 +316,9 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
-/**********************************************
-********* d3 library code starts here *********
-***********************************************/
+*********                              d3 library code starts here                              *********
+/********************************************************************************************************
+********************************************************************************************************/
 
 var treeData =
   {
@@ -360,9 +371,9 @@ root.children.forEach(collapse);
 
 update(root);
 
-/**********************************************
-********** d3 library code ends here **********
-***********************************************/
+/********************************************************************************************************
+*********                               d3 library code ends here                               *********
+********************************************************************************************************/
 
 class File{
   constructor(name, type){
@@ -372,7 +383,7 @@ class File{
     this.magicNum = ""
     for(var i = 0; i < type.length; i++)
       this.magicNum += this.type.charCodeAt(i) + " "
-    this.size = this.name.length + this.magicNum.length 
+    this.size = this.name.length + this.magicNum.length + this.id.length 
     this.location = ""
     this.contents = ""
     this.dateCreated = new Date()
@@ -385,8 +396,15 @@ class File{
 
   write(content){
     this.contents = content
-    this.size = this.name.length + this.magicNum.length + this.contents.length
+    this.size = this.name.length + this.magicNum.length + this.id.length + this.contents.length
     this.dateModified = new Date()
+  }
+
+  //Ordinarily not viewable by the user
+  //This is just for demonstration purposes
+  viewHeader(){
+    console.log("Magic Number: " + this.magicNum + "\n" + 
+                "File ID: " + this.id + "\n") 
   }
 
   properties(){
@@ -400,7 +418,7 @@ class File{
 
   rename(newName){
     this.name = newName
-    this.size = this.name.length + this.magicNum.length + this.contents.length
+    this.size = this.name.length + this.magicNum.length + this.id.length + this.contents.length
   }
 }
 
@@ -412,7 +430,7 @@ class Directory{
     this.magicNum = ""
     for (var i = 0; i < this.type.length; i++)
       this.magicNum += this.type.charCodeAt(i) + " "
-    this.size = this.name.length + this.magicNum.length
+    this.size = this.name.length + this.magicNum.length + this.id.length
     if (this.name === "RootFolder")
       this.location = "RootFolder"
     else
@@ -446,7 +464,7 @@ class Directory{
   //have its own size updated properly before it is added to the parent
   //directory's size
   updateSize(){
-    this.size = this.name.length + this.magicNum.length    
+    this.size = this.name.length + this.magicNum.length + this.id.length    
     for(let i = 0; i < this.children.length; i++){
       if(this.children[i].type === "dir"){
         this.children[i].updateSize()
@@ -474,6 +492,13 @@ class Directory{
       else
         this.children[i].location = newLocation
     }        
+  }
+
+  //Ordinarily not viewable by the user
+  //This is just for demonstration purposes
+  viewHeader(){
+    console.log("Magic Number: " + this.magicNum + "\n" + 
+                "File ID: " + this.id + "\n") 
   }
 
   properties(){
@@ -699,9 +724,9 @@ function generate() {
     update(root);
 }
 
-/**********************************************
-********* d3 library code starts here *********
-***********************************************/
+/********************************************************************************************************
+*********                              d3 library code starts here                              *********
+********************************************************************************************************/
 
 // Collapse the node and all its children
 function collapse(d) {
