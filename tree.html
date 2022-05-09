@@ -316,8 +316,8 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script>
 
-*********                              d3 library code starts here                              *********
 /********************************************************************************************************
+*********                              d3 library code starts here                              *********
 ********************************************************************************************************/
 
 var treeData =
@@ -874,7 +874,7 @@ function update(source) {
   function click(d) {
     //console.log(d.data.name)
     //console.log(d.data.type)
-    console.log(d.data.file.properties())
+    d.data.file.properties()
     if(d.data.type === "file")
       fileWrite(d.data.file)
     if (d.children) {
