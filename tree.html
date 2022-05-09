@@ -72,13 +72,26 @@
                         if(inputSplit[1] === "RootFolder"){
                           consoleScreen.innerHTML += "Stop trying to kill the file system!" + "\n"
                         }
-                        else{
-                            if(workingDirectory == rootDirectory)
-                              deleteOne(workingDirectory.name + "\\" + inputSplit[1]) 
-                            else
-                              deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1]) 
+                        else{                          
+                          var pathToDelete
+                          
+                          if(workingDirectory == rootDirectory){
+                            pathToDelete = workingDirectory.name + "\\" + inputSplit[1]                            
+                          }                             
+                          else{
+                            pathToDelete = workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1]
+                          } 
+
+                          var unsafeDeletion = findNode(pathToDelete).file.checkIfOpen()
+
+                          if(unsafeDeletion){
+                            alert("Directory cannot be deleted because it contains a file that is currently in use.")
+                            consoleScreen.innerHTML += "Directory deletion failed\n"
+                          }
+                          else{
+                            deleteOne(pathToDelete)
                             consoleScreen.innerHTML += "Directory " + inputSplit[1] + " deleted\n";
-                                                
+                          }                     
                         }                      
                         break;
                     //Print working directory
@@ -237,6 +250,14 @@
                         else
                           list()
                         break;
+                    //Locate a file in the file system
+                    case "find":
+                        let found = rootDirectory.find(inputSplit[1].split(".")[0])
+                        if(found)
+                          consoleScreen.innerHTML += "File located at " + found + "\n"
+                        else
+                          consoleScreen.innerHTML += "File not found"
+                        break;
                     //Display console commands
                     case "help":
                         consoleScreen.innerHTML += "Recognized commands: \n" +
@@ -250,6 +271,7 @@
                         "rename [filename.type] [new name] -- Changes the name of the specified file \n\tto the given input. Will not change file type extension \n" +
                         "move [filename.type] [new location] -- Moves the specified file to the given \n\tlocation \n" +
                         "list [file path] -- Lists all files and folders in the specified directory \n\tor in the current working directory if no file path is given\n"
+                        "find [filename] -- Attempts to locate the specified file within the file system"
                         break;
                     default:
                         consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
@@ -281,7 +303,6 @@
               writing = true
               consoleScreen.innerHTML += "Editing " + file.name + " >>> \n"
               activeFile = file
-              //console.log(file.read())
               fileIndex = fileOpen[1]
 
               editBlock.style.display = "table-cell"
@@ -501,6 +522,20 @@ class Directory{
                 "File ID: " + this.id + "\n") 
   }
 
+  //Used when moving/deleting/renaming a directory to ensure that
+  //there are no open files beneath it
+  checkIfOpen(){
+    for(let i = 0; i < this.children.length; i++){
+      if(this.children[i].type == "dir")
+        this.children[i].checkIfOpen()
+      else{
+        if(OFT.searchOFT(this.children[i].id))
+          return true 
+      }
+    }
+    return false
+  }
+
   properties(){
     console.log("File Name: " + this.name + "\n" +
                 "File Type: " + this.type + "\n" +
@@ -508,6 +543,19 @@ class Directory{
                 "File Location: " + this.location + "\n" +
                 "Date Created: " + this.dateCreated + "\n" +
                 "Date Modified: " + this.dateModified + "\n")
+  }
+
+  find(fileName){
+    for(let i = 0; i < this.children.length; i++){
+      if (this.children[i].name == fileName){        
+        return this.children[i].location
+      }       
+      else if (this.children[i].type == "dir"){        
+        return this.children[i].find(fileName)
+      }
+      else
+        return false
+    }
   }
 
 }
@@ -539,8 +587,6 @@ class OpenFileTable{
           break;
         }
     }
-      
-
 
     return [true, index]
   }
@@ -549,6 +595,20 @@ class OpenFileTable{
   //ensuring it can only be closed by the process using it.
   closeFile(index){
     this.fileTable[index] = 0
+  }
+
+  searchOFT(fileID){
+    for(let i = 0; i < this.fileTable.length; i++){
+      if(this.fileTable[i].FileID == fileID)
+        return true
+    }
+    return false
+  }
+
+  //Ordinarily not viewable by the user
+  //This method exists for demonstration purposes
+  viewOFT(){
+    return this.fileTable
   }
 }
 
