@@ -81,7 +81,7 @@
                           else{
                             pathToDelete = workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1]
                           } 
-
+                          console.log(pathToDelete)
                           var unsafeDeletion = findNode(pathToDelete).file.checkIfOpen()
 
                           if(unsafeDeletion){
@@ -203,45 +203,76 @@
                         break;
                     //Rename file or directory
                     case "rename":
+                        var nodeToRename
+                        let newName = inputSplit[2].split(".")[0]
                         if(workingDirectory == rootDirectory){
-                          nodeToEdit = findNode(workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToRename = findNode(workingDirectory.name + "\\" + inputSplit[1])
                         }
                         else{
-                          nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToRename = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         }
-                        var open = OFT.openFile(nodeToEdit.file)
-                        if(open){ 
-                          let newName = inputSplit[2].split(".")[0]
-                          if(nodeToEdit.type === "file")
-                            nodeToEdit.name = newName + "." + nodeToEdit.file.type
-                          else
-                            nodeToEdit.name = newName
-                          nodeToEdit.file.rename(newName)
-                          OFT.closeFile(open[1])
-                          generate()
-                          consoleScreen.innerHTML += "File renamed \n"
+                        if(nodeToRename.type == "file"){
+                          var open = OFT.openFile(nodeToRename.file)
+                          
+                          if(open){                             
+                            if(nodeToRename.type === "file")
+                              nodeToRename.name = newName + "." + nodeToRename.file.type
+                            else
+                              nodeToRename.name = newName
+                            nodeToRename.file.rename(newName)
+                            OFT.closeFile(open[1])
+                            generate()
+                            consoleScreen.innerHTML += "File renamed \n"
+                          }
+                          else{
+                            alert("File cannot be renamed because it is in use.")
+                          }                 
                         }
                         else{
-                          alert("File cannot be renamed because it is in use.")
-                        }                         
+                          var unsafeRename = nodeToRename.file.checkIfOpen()
+
+                          if(unsafeRename){
+                            alert("Directory cannot be renamed because it contains a file that is currently in use.")
+                            consoleScreen.innerHTML += "Unable to rename directory\n"
+                          }
+                          else{
+                            nodeToRename.file.rename(newName)
+                            consoleScreen.innerHTML += "Directory " + inputSplit[1] + " renamed\n";
+                          }                     
+                        }                                
                         break;
                     //Move file or directory
                     case "move":
+                        let newParentPath = inputSplit[2]
                         if(workingDirectory == rootDirectory){
                           nodeToMove = findNode(workingDirectory.name + "\\" + inputSplit[1])
                         }
                         else{
                           nodeToMove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         } 
-                        var open = OFT.openFile(nodeToMove.file)
-                        if(open){
-                          newParentPath = inputSplit[2]
-                          move(nodeToMove, newParentPath)
-                          OFT.closeFile(open[1])
+                        if (nodeToMove.type == "file"){
+                          var open = OFT.openFile(nodeToMove.file)
+                          if(open){                            
+                            move(nodeToMove, newParentPath)
+                            OFT.closeFile(open[1])
+                          }
+                          else{
+                            alert("File cannot be moved because it is in use.")
+                          }
                         }
                         else{
-                          alert("File cannot be moved because it is in use.")
-                        }                        
+                          var unsafeMove = nodeToMove.file.checkIfOpen()
+
+                          if(unsafeMove){
+                            alert("Directory cannot be moved because it contains a file that is currently in use.")
+                            consoleScreen.innerHTML += "Unable to move directory\n"
+                          }
+                          else{
+                            move(nodeToMove, newParentPath)
+                            consoleScreen.innerHTML += "Directory " + inputSplit[1] + " moved\n";
+                          }                  
+                        }
+                                                
                         break;
                     //List all files in a given directory
                     case "list": 
@@ -271,7 +302,7 @@
                         "rename [filename.type] [new name] -- Changes the name of the specified file \n\tto the given input. Will not change file type extension \n" +
                         "move [filename.type] [new location] -- Moves the specified file to the given \n\tlocation \n" +
                         "list [file path] -- Lists all files and folders in the specified directory \n\tor in the current working directory if no file path is given\n"
-                        "find [filename] -- Attempts to locate the specified file within the file system"
+                        "find [filename] -- Attempts to locate the specified file within the file system\n"
                         break;
                     default:
                         consoleScreen.innerHTML += "Unrecognized command: " + inputSplit[0] + "\n";
@@ -527,7 +558,7 @@ class Directory{
   checkIfOpen(){
     for(let i = 0; i < this.children.length; i++){
       if(this.children[i].type == "dir")
-        this.children[i].checkIfOpen()
+        return this.children[i].checkIfOpen()
       else{
         if(OFT.searchOFT(this.children[i].id))
           return true 
