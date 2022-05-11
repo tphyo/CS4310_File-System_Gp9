@@ -191,7 +191,7 @@
                         if(open){
                           let contents = inputSplit.slice(2, inputSplit.length).join(" ")
                           nodeToEdit.file.write(contents)
-                          console.log(nodeToEdit.file.read())
+                          //console.log(nodeToEdit.file.read())
                           rootDirectory.updateSize()
                           OFT.closeFile(open[1])
                           consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
@@ -440,9 +440,11 @@ class File{
     this.contents = ""
     this.dateCreated = new Date()
     this.dateModified = this.dateCreated
+    this.dateAccessed = this.dateCreated
   }
 
   read(){
+    this.dateAccessed = new Date()
     return this.contents
   }
 
@@ -465,12 +467,14 @@ class File{
                 "File Size: " + this.size + "\n" +
                 "File Location: " + this.location + "\n" +
                 "Date Created: " + this.dateCreated + "\n" +
-                "Date Modified: " + this.dateModified + "\n")
+                "Date Modified: " + this.dateModified + "\n" +
+                "Date Accessed: " + this.dateAccessed + "\n")
   }
 
   rename(newName){
     this.name = newName
     this.size = this.name.length + this.magicNum.length + this.id.length + this.contents.length
+    this.dateAccessed = new Date()
   }
 }
 
@@ -489,7 +493,6 @@ class Directory{
       this.location = ""
     this.children = []
     this.dateCreated = new Date()
-    this.dateModified = this.dateCreated
   }
 
   addChild(child){
@@ -572,8 +575,7 @@ class Directory{
                 "File Type: " + this.type + "\n" +
                 "File Size: " + this.size + "\n" +
                 "File Location: " + this.location + "\n" +
-                "Date Created: " + this.dateCreated + "\n" +
-                "Date Modified: " + this.dateModified + "\n")
+                "Date Created: " + this.dateCreated + "\n")
   }
 
   find(fileName){
