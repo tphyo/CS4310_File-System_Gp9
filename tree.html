@@ -79,9 +79,9 @@
                             pathToDelete = workingDirectory.name + "\\" + inputSplit[1]                            
                           }                             
                           else{
-                            pathToDelete = workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1]
+                            pathToDelete = workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1]
                           } 
-                          console.log(pathToDelete)
+                          //console.log(pathToDelete)
                           var unsafeDeletion = findNode(pathToDelete).file.checkIfOpen()
 
                           if(unsafeDeletion){
@@ -99,7 +99,7 @@
                         if (workingDirectory == rootDirectory)
                           consoleScreen.innerHTML += "Current directory: RootFolder" + "\n";
                         else
-                        consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                        consoleScreen.innerHTML += "Current directory: " + workingDirectory.file.location + "\\" + workingDirectory.name + "\n";
                         break;
                     //Change directory
                     case "cd":     
@@ -118,9 +118,9 @@
                             if(workingDirectory == rootDirectory)
                               workingDirectory = findNode(workingDirectory.name + "\\" + inputSplit[1])  
                             else
-                              workingDirectory = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                              workingDirectory = findNode(workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                           }
-                          consoleScreen.innerHTML += "Current directory: " + workingDirectory.location + "\\" + workingDirectory.name + "\n";
+                          consoleScreen.innerHTML += "Current directory: " + workingDirectory.file.location + "\\" + workingDirectory.name + "\n";
                         }                        
                         break;
                     //Create new file
@@ -167,10 +167,10 @@
                           }                          
                         }
                         else{
-                          nodeToRemove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToRemove = findNode(workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                           var open = OFT.openFile(nodeToRemove.file)
                           if(open){
-                            deleteOne(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                            deleteOne(workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                             OFT.closeFile(open[1]) //by this point, the file is already deleted but its entry still exists in the OFT and needs to be removed
                             consoleScreen.innerHTML += "File " + inputSplit[1] + " deleted\n"
                           }
@@ -185,21 +185,25 @@
                           nodeToEdit = findNode(workingDirectory.name + "\\" + inputSplit[1])
                         }
                         else{
-                          nodeToEdit = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToEdit = findNode(workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         }  
-                        var open= OFT.openFile(nodeToEdit.file)
-                        if(open){
-                          let contents = inputSplit.slice(2, inputSplit.length).join(" ")
-                          nodeToEdit.file.write(contents)
-                          //console.log(nodeToEdit.file.read())
-                          rootDirectory.updateSize()
-                          OFT.closeFile(open[1])
-                          consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
-                        } 
+                        if(nodeToEdit.type == "file"){
+                          var open= OFT.openFile(nodeToEdit.file)
+                          if(open){
+                            let contents = inputSplit.slice(2, inputSplit.length).join(" ")
+                            nodeToEdit.file.write(contents)
+                            //console.log(nodeToEdit.file.read())
+                            rootDirectory.updateSize()
+                            OFT.closeFile(open[1])
+                            consoleScreen.innerHTML += "Saved changes to " + inputSplit[1] + "\n"
+                          } 
+                          else{
+                            alert("File is already open in the editor.")
+                          }
+                        }
                         else{
-                          alert("File is already open in the editor.")
-                        }                   
-                        
+                          alert("Cannot write contents of non-file type.")
+                        }                                          
                         break;
                     //Rename file or directory
                     case "rename":
@@ -209,16 +213,13 @@
                           nodeToRename = findNode(workingDirectory.name + "\\" + inputSplit[1])
                         }
                         else{
-                          nodeToRename = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToRename = findNode(workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         }
                         if(nodeToRename.type == "file"){
                           var open = OFT.openFile(nodeToRename.file)
                           
-                          if(open){                             
-                            if(nodeToRename.type === "file")
-                              nodeToRename.name = newName + "." + nodeToRename.file.type
-                            else
-                              nodeToRename.name = newName
+                          if(open){
+                            nodeToRename.name = newName + "." + nodeToRename.file.type
                             nodeToRename.file.rename(newName)
                             OFT.closeFile(open[1])
                             generate()
@@ -236,6 +237,7 @@
                             consoleScreen.innerHTML += "Unable to rename directory\n"
                           }
                           else{
+                            nodeToRename.name = newName
                             nodeToRename.file.rename(newName)
                             consoleScreen.innerHTML += "Directory " + inputSplit[1] + " renamed\n";
                           }                     
@@ -248,12 +250,13 @@
                           nodeToMove = findNode(workingDirectory.name + "\\" + inputSplit[1])
                         }
                         else{
-                          nodeToMove = findNode(workingDirectory.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
+                          nodeToMove = findNode(workingDirectory.file.location + "\\" + workingDirectory.name + "\\" + inputSplit[1])
                         } 
                         if (nodeToMove.type == "file"){
                           var open = OFT.openFile(nodeToMove.file)
                           if(open){                            
                             move(nodeToMove, newParentPath)
+                            nodeToMove.file.dateAccessed = new Date()
                             OFT.closeFile(open[1])
                           }
                           else{
@@ -540,7 +543,7 @@ class Directory{
   updateChildLocation(location){
     this.location = location
     let newLocation = location + "\\" + this.name
-    console.log(newLocation)
+    //console.log(newLocation)
     for(let i = 0; i < this.children.length; i++){
       if(this.children[i].type === "dir")
         this.children[i].updateChildLocation(newLocation)
@@ -753,7 +756,7 @@ function addOne(name, fileType) {
       }
     }        
     else{
-      parentNode = findNode(workingDirectory.location + "\\" + workingDirectory.name)
+      parentNode = findNode(workingDirectory.file.location + "\\" + workingDirectory.name)
 
       if(fileType === "folder"){
         newDirectory = new Directory(name)
